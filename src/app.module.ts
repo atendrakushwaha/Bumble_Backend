@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+
 import { AuthModule } from './modules/auth/auth.module';
 import { UserModule } from './modules/user/user.module';
 import { MatchModule } from './modules/match/match.module';
@@ -11,13 +13,21 @@ import { VideoModule } from './modules/video/video.module';
 
 @Module({
   imports: [
-    // Load environment variables globally
+    // Global ENV config
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    // Connect to MongoDB
-    MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/datingapp'),
-    // Application Modules
+
+    // MongoDB connection (FIXED + SAFE)
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI'),
+      }),
+    }),
+
+    // App Modules
     AuthModule,
     UserModule,
     MatchModule,
